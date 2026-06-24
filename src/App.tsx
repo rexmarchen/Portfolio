@@ -17,8 +17,15 @@ import { useScrollProgress } from "./hooks/useScrollProgress";
 
 function App() {
   const [portfolio, setPortfolio] = useState(loadPortfolio);
-  const [isAdmin, setIsAdmin] = useState(() => window.location.hash === "#admin");
+  const [isAdmin, setIsAdmin] = useState(() => window.location.hash === "#admin" || window.location.pathname === "/admin" || window.location.pathname === "/admin/");
   const [authed, setAuthed] = useState(() => isAuthenticated());
+
+  // Redirect /admin or /admin/ to /#admin
+  useEffect(() => {
+    if (window.location.pathname === "/admin" || window.location.pathname === "/admin/") {
+      window.location.replace("/#admin");
+    }
+  }, []);
 
   useScrollProgress();
 

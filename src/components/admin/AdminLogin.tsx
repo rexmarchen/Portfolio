@@ -128,7 +128,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
         </form>
 
         <p className="mt-6 text-center text-[0.65rem] text-text-soft/60">
-          Default password: rexeditzz2024
+          Default password: Anshu90#@
         </p>
       </div>
 

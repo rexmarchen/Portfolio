@@ -22,11 +22,24 @@ export function VideoCard({ item, index }: VideoCardProps) {
     const video = videoRef.current;
     if (!video || !hasVideo) return;
 
+    let playTimeout: ReturnType<typeof setTimeout>;
+
     if (isVisible) {
-      video.play().catch(() => undefined);
+      // Debounce video playing by 350ms to ensure the user has paused scrolling on it
+      playTimeout = setTimeout(() => {
+        video.play().catch(() => undefined);
+      }, 350);
     } else {
       video.pause();
+      video.currentTime = 0;
     }
+
+    return () => {
+      clearTimeout(playTimeout);
+      if (video) {
+        video.pause();
+      }
+    };
   }, [isVisible, hasVideo]);
 
   return (
@@ -39,7 +52,19 @@ export function VideoCard({ item, index }: VideoCardProps) {
         ${isVisible ? "opacity-100 translate-y-0 scale-100" : ""}
       `}
       style={{ transitionDelay: `${index * 100}ms` }}
-      onPointerEnter={() => videoRef.current?.play().catch(() => undefined)}
+      onPointerEnter={() => {
+        const video = videoRef.current;
+        if (video && hasVideo) {
+          video.play().catch(() => undefined);
+        }
+      }}
+      onPointerLeave={() => {
+        const video = videoRef.current;
+        if (video) {
+          video.pause();
+          video.currentTime = 0;
+        }
+      }}
     >
       {/* Card frame */}
       <div
@@ -61,9 +86,11 @@ export function VideoCard({ item, index }: VideoCardProps) {
             muted
             loop
             playsInline
-            preload={item.featured ? "metadata" : "none"}
+            disablePictureInPicture
+            controlsList="nodownload"
+            preload="metadata"
             onError={() => setMediaFailed(true)}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 transform-gpu [will-change:transform]"
           />
         ) : (
           <div

@@ -29,16 +29,20 @@ export function useScrollProgress() {
 
     lenis.on("scroll", (e: { progress: number; scroll: number }) => {
       const scrollY = e.scroll;
+      const viewportHeight = window.innerHeight || 1;
       const scrollable =
-        document.documentElement.scrollHeight - window.innerHeight || 1;
+        document.documentElement.scrollHeight - viewportHeight || 1;
       const progress = Math.min(scrollY / scrollable, 1);
-      const heroProgress = Math.min(scrollY / (window.innerHeight || 1), 1);
 
       setVar("--scroll-progress", progress.toFixed(5));
-      setVar("--hero-progress", heroProgress.toFixed(5));
-      setVar("--hero-fade", (1 - heroProgress * 0.35).toFixed(5));
-      setVar("--hero-y", `${(heroProgress * 50).toFixed(2)}px`);
-      setVar("--hero-scale", (1 + heroProgress * 0.04).toFixed(5));
+
+      if (scrollY <= viewportHeight + 100) {
+        const heroProgress = Math.min(scrollY / viewportHeight, 1);
+        setVar("--hero-progress", heroProgress.toFixed(5));
+        setVar("--hero-fade", (1 - heroProgress * 0.35).toFixed(5));
+        setVar("--hero-y", `${(heroProgress * 50).toFixed(2)}px`);
+        setVar("--hero-scale", (1 + heroProgress * 0.04).toFixed(5));
+      }
 
       // Parallax offset for section background glows
       setVar("--parallax-y", `${(scrollY * 0.08).toFixed(2)}px`);

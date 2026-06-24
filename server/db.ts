@@ -35,6 +35,7 @@ const defaultPortfolio = {
       video: "/videos/updated-editing.mov",
       poster: "",
       featured: true,
+      type: "reel"
     },
     {
       id: "motion-launch",
@@ -44,6 +45,7 @@ const defaultPortfolio = {
       video: "",
       poster: "",
       featured: true,
+      type: "motion"
     },
     {
       id: "reels-pack",
@@ -53,6 +55,7 @@ const defaultPortfolio = {
       video: "",
       poster: "",
       featured: true,
+      type: "reel"
     },
     {
       id: "social-ad-campaign",
@@ -62,6 +65,7 @@ const defaultPortfolio = {
       video: "",
       poster: "",
       featured: true,
+      type: "reel"
     },
     {
       id: "product-3d-visual",
@@ -71,6 +75,7 @@ const defaultPortfolio = {
       video: "",
       poster: "",
       featured: true,
+      type: "motion"
     },
     {
       id: "thumbnail-breakdown",
@@ -80,6 +85,7 @@ const defaultPortfolio = {
       video: "",
       poster: "",
       featured: false,
+      type: "motion"
     },
     {
       id: "vlog-cinematic-intro",
@@ -89,6 +95,7 @@ const defaultPortfolio = {
       video: "",
       poster: "",
       featured: false,
+      type: "reel"
     },
     {
       id: "corporate-promo-reel",
@@ -98,6 +105,7 @@ const defaultPortfolio = {
       video: "",
       poster: "",
       featured: false,
+      type: "reel"
     },
   ],
 };
@@ -178,24 +186,28 @@ class SqliteDbEngine implements DbEngine {
               clientType TEXT,
               video TEXT,
               poster TEXT,
-              featured INTEGER
+              featured INTEGER,
+              type TEXT
             )`,
             async (err: any) => {
               if (err) return reject(err);
 
-              // Seed if empty
-              try {
-                const needsSeed = await this.isSettingsEmpty();
-                if (needsSeed) {
-                  await this.seedDefaults();
-                } else {
-                  await this.syncContactDetails();
-                  await this.syncNewDefaultSlots();
+              // Safe migration: Add 'type' column if it doesn't exist
+              this.db.run(`ALTER TABLE videos ADD COLUMN type TEXT`, async () => {
+                // Seed if empty
+                try {
+                  const needsSeed = await this.isSettingsEmpty();
+                  if (needsSeed) {
+                    await this.seedDefaults();
+                  } else {
+                    await this.syncContactDetails();
+                    await this.syncNewDefaultSlots();
+                  }
+                  resolve();
+                } catch (seedErr) {
+                  reject(seedErr);
                 }
-                resolve();
-              } catch (seedErr) {
-                reject(seedErr);
-              }
+              });
             }
           );
         });
@@ -232,10 +244,10 @@ class SqliteDbEngine implements DbEngine {
         console.log(`Syncing ${missingVideos.length} new default video slots...`);
         this.db.serialize(() => {
           const stmt = this.db.prepare(
-            "INSERT INTO videos (id, title, category, clientType, video, poster, featured) VALUES (?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO videos (id, title, category, clientType, video, poster, featured, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
           );
           for (const v of missingVideos) {
-            stmt.run(v.id, v.title, v.category, v.clientType, v.video, v.poster, v.featured ? 1 : 0);
+            stmt.run(v.id, v.title, v.category, v.clientType, v.video, v.poster, v.featured ? 1 : 0, v.type || "reel");
           }
           stmt.finalize((err) => {
             if (err) return reject(err);
@@ -308,6 +320,7 @@ class SqliteDbEngine implements DbEngine {
               video: v.video,
               poster: v.poster,
               featured: v.featured === 1,
+              type: v.type || ((v.category || "").toLowerCase().match(/motion|graphics/) ? "motion" : "reel"),
             }));
 
             resolve(config);
@@ -359,9 +372,10 @@ class SqliteDbEngine implements DbEngine {
             // Insert videos
             if (config.videos && Array.isArray(config.videos)) {
               const vStmt = this.db.prepare(
-                "INSERT INTO videos (id, title, category, clientType, video, poster, featured) VALUES (?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO videos (id, title, category, clientType, video, poster, featured, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
               );
               for (const v of config.videos) {
+                const resolvedType = v.type || ((v.category || "").toLowerCase().match(/motion|graphics/) ? "motion" : "reel");
                 vStmt.run(
                   v.id,
                   v.title || "",
@@ -369,7 +383,8 @@ class SqliteDbEngine implements DbEngine {
                   v.clientType || "",
                   v.video || "",
                   v.poster || "",
-                  v.featured ? 1 : 0
+                  v.featured ? 1 : 0,
+                  resolvedType
                 );
               }
               vStmt.finalize();

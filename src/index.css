@@ -261,7 +261,7 @@ h1, h2, h3, h4, h5, h6, p {
 /* Parallax offset for background glows */
 .parallax-glow {
   transform: translateY(var(--parallax-y, 0px));
-  transition: transform 0.05s linear;
+  will-change: transform;
 }
 
 /* ───── Smooth scroll helpers ───── */

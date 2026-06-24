@@ -24,6 +24,23 @@ export function ParticleField() {
     let h = 0;
     let particles: Particle[] = [];
     const mouse = { x: 0, y: 0, active: false };
+    let isInView = true;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      isInView = entry.isIntersecting;
+      if (isInView) {
+        if (!raf) {
+          raf = requestAnimationFrame(draw);
+        }
+      } else {
+        if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      }
+    }, { threshold: 0 });
+
+    observer.observe(canvas);
 
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -128,6 +145,7 @@ export function ParticleField() {
     canvas.addEventListener("pointerleave", handleLeave);
 
     return () => {
+      observer.disconnect();
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("pointermove", handleMove);

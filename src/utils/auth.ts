@@ -1,7 +1,7 @@
 const ENCODER = new TextEncoder();
 
 export const DEFAULT_PASSWORD_HASH =
-  "6aa98625ce411844ddb89f21447842894ad2ba659b41f1530a9be5fbd2e47ebb"; // rexeditzz2024
+  "97c7375c5f9697c9337e244a662d465168cb39ef394310d379b20b6751ceba3e"; // Anshu90#@
 
 export async function hashPassword(password: string): Promise<string> {
   const data = ENCODER.encode(password);
